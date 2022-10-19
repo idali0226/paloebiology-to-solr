@@ -1,0 +1,13 @@
+*/nb-configuration.xml
+
+*/target/
+*/nbproject/*
+
+/project-initdata.yml
+
+/mapping_files
+
+.DS_Store
+
+/notes
+notes

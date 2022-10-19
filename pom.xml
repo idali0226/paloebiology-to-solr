@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>se.nrm</groupId>
+  <artifactId>paleobiology-solr</artifactId>
+  <version>0.1</version>
+  <packaging>pom</packaging>
+  <name>${project.artifactId}</name>
+  
+  <organization>
+    <name>Swedish Museum of Natural History</name>
+    <url>http://www.nrm.se</url>
+  </organization>
+
+  <developers>
+    <developer>
+      <id>idali</id>
+      <name>Ida Li</name>
+      <email>idal.li@nrm.se</email>
+      <organization>nrm.se</organization>
+    </developer>
+  </developers>
+ 
+  <properties>
+    <version.thorntail>2.7.0.Final</version.thorntail>
+    <version.org.slf4j>1.7.31</version.org.slf4j>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
+    <failOnMissingWebXml>false</failOnMissingWebXml>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+  
+  <modules> 
+    <module>paleobiology-data-process</module>
+    <!--<module>svh-gbif-process</module>--> 
+  </modules>
+ 
+ 
+ <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.thorntail</groupId>
+        <artifactId>bom</artifactId>
+        <version>${version.thorntail}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+      <dependency>
+        <groupId>javax</groupId>
+        <artifactId>javaee-api</artifactId>
+        <version>8.0.1</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  
+  <dependencies> 
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${version.org.slf4j}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.20</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.13.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-all</artifactId>
+      <version>2.0.2-beta</version>
+      <scope>test</scope>
+    </dependency>
+      
+    <dependency>
+      <groupId>javax</groupId>
+      <artifactId>javaee-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>${project.artifactId}</finalName>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>3.8.1</version>
+          <configuration>
+            <source>1.8</source>
+            <target>1.8</target>
+          </configuration>
+        </plugin> 
+        <plugin>
+          <groupId>io.thorntail</groupId>
+          <artifactId>thorntail-maven-plugin</artifactId>
+          <version>${version.thorntail}</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>package</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <jvmArguments>
+              <jvmArgument>-Xmx2048m</jvmArgument>
+            </jvmArguments>
+            <properties>
+              <java.net.preferIPv4Stack>true</java.net.preferIPv4Stack>
+            </properties>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>cobertura-maven-plugin</artifactId>
+          <version>2.7</version>
+          <configuration>
+            <instrumentation>
+              <ignoreMethodAnnotation>lombok.Generated</ignoreMethodAnnotation>
+            </instrumentation>
+            <formats>
+              <format>html</format>
+              <format>xml</format>
+            </formats>
+            <check/>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+</project>

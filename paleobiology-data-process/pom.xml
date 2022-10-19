@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+    
+  <parent>
+    <artifactId>paleobiology-solr</artifactId>
+    <groupId>se.nrm</groupId>
+    <version>0.1</version>
+  </parent>
+ 
+  <artifactId>paleobiology-data-process</artifactId> 
+  <packaging>war</packaging>
+  <name>paleobiology-data-process</name>
+   
+  <properties>
+    <endorsed.dir>${project.build.directory}/endorsed</endorsed.dir>  
+  </properties>
+  
+  <repositories>  
+       <repository>
+      <id>AsposeJavaAPI</id>
+      <name>Aspose Java API</name>
+      <url>https://repository.aspose.com/repo/</url>
+      </repository> 
+  </repositories>
+     
+  <dependencies> 
+       
+    <!--    thorntail.ee.default-bindings-service.managed-scheduled-executor-service
+    The JNDI name where the default EE Managed Scheduled Executor Service can be found-->
+    <dependency>
+      <groupId>io.thorntail</groupId>
+      <artifactId>ee</artifactId> 
+      <version>2.7.0.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>io.thorntail</groupId>
+      <artifactId>undertow</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.thorntail</groupId>
+      <artifactId>cdi</artifactId>
+    </dependency>
+    
+    <dependency>
+      <groupId>io.thorntail</groupId>
+      <artifactId>ejb</artifactId>
+    </dependency> 
+    
+    <!--    <dependency>
+      <groupId>io.thorntail</groupId>
+      <artifactId>jpa</artifactId>
+    </dependency>-->
+      
+    <dependency>
+      <groupId>io.thorntail</groupId>
+      <artifactId>jaxrs</artifactId>
+    </dependency>
+    
+    <!-- For test purpose-->
+    <dependency>
+      <groupId>org.glassfish</groupId>
+      <artifactId>javax.json</artifactId>
+      <version>1.1.4</version>
+      <scope>test</scope>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-csv</artifactId>
+      <version>1.8</version> 
+    </dependency>
+    
+      
+    <dependency>
+      <artifactId>solr-solrj</artifactId>
+      <groupId>org.apache.solr</groupId>
+      <version>8.3.1</version>
+    </dependency>
+     
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.10</version>
+    </dependency>
+    
+<!-- https://mvnrepository.com/artifact/com.aspose/aspose-cells -->
+   <dependency>
+      <groupId>com.aspose</groupId>
+      <artifactId>aspose-cells</artifactId>
+      <version>8.6.3</version>
+      </dependency>
+   
+ 
+
+     
+    <!--    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-core</artifactId>
+      <version>2.10.1</version>
+    </dependency>-->
+     
+    <dependency>
+      <groupId>javax</groupId>
+      <artifactId>javaee-web-api</artifactId>
+      <version>8.0.1</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>${project.artifactId}</finalName>
+    <plugins> 
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>3.2.3</version>
+        <configuration>
+          <failOnMissingWebXml>false</failOnMissingWebXml>
+        </configuration>
+      </plugin>
+      <!-- If not package in war -->
+      <!--      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.4.3</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <artifactSet>
+                <includes>
+                  <include>org.apache.commons:commons-csv</include>
+                  <include>org.apache.commons:commons-lang3</include>
+                </includes>
+              </artifactSet>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>-->
+      <plugin>
+        <groupId>io.thorntail</groupId>
+        <artifactId>thorntail-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>package</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <jvmArguments>
+            <jvmArgument>-Xmx2048m</jvmArgument>
+          </jvmArguments>
+          <properties>
+            <java.net.preferIPv4Stack>true</java.net.preferIPv4Stack>
+          </properties>
+        </configuration>
+      </plugin> 
+    </plugins>
+  </build> 
+</project>
