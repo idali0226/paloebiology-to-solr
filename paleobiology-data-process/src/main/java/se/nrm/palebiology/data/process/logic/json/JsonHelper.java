@@ -1,7 +1,6 @@
 package se.nrm.palebiology.data.process.logic.json;
 
-import java.math.BigDecimal;
-import javax.json.JsonObject;
+import java.math.BigDecimal; 
 import javax.json.JsonObjectBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -38,16 +37,19 @@ public class JsonHelper {
     sb.append(value);
     attBuilder.add(idKey, sb.toString().trim());
   }
-
-//  public void addCollectionName(JsonObjectBuilder attBuilder, JsonObject json) {
-//    String collectionName = json.getString(collectionNameKey);
-//    log.info(collectionName);
-//    attBuilder.add(collectionNameKey, collectionName);
-//  }
-  
+ 
   public void addAttribute(JsonObjectBuilder attBuilder, String key, String value) { 
-    attBuilder.add(key, value.trim());
+    if(!StringUtils.isBlank((value))) {
+      attBuilder.add(key, value.trim());
+    } 
   }
+  
+  public void addAttribute(JsonObjectBuilder attBuilder, String key, int value) { 
+    if(value > 0) {
+      attBuilder.add(key, value);
+    } 
+  }
+  
   
   /**
    * 

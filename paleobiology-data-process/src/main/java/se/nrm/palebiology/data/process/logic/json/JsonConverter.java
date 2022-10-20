@@ -7,7 +7,9 @@ import java.io.InputStream;
 import java.io.Serializable;  
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List; 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 import javax.json.Json;
@@ -46,11 +48,14 @@ public class JsonConverter implements Serializable {
   private final String catalogedYearKey = "catalogedYear";
   private final String txFullNameKey = "txFullName";
   private final String synonymKey = "synonym";
-  private final String synonymAuthorKey = "synonymAuthor";
+  private final String synonymAuthorKey = "synonymAuthor"; 
   private final String typeStatusKey = "typeStatus";
   private final String isTypeKey = "isType";
   private final String countryKey = "country";
   private final String inSwedenKey = "inSweden";
+  
+  private final String speciesName = "Species name";
+  private final String author = "Author";
   
   private final String mapKey = "map";
   private final String mappingKey = "mapping";
@@ -70,17 +75,23 @@ public class JsonConverter implements Serializable {
   private final Pattern pattern = Pattern.compile("-?\\d+(\\.\\d+)?");
   private final String slash = "/";
   private final String n = "N";
-  private final String e = "E";
-  
+  private final String e = "E"; 
   private final String dash = "-";
   private final String strOne = "01";
   
-  private final int batchSize = 1000;
+  private final int batchSize = 2000;
  
   private JsonObjectBuilder builder;
-  private JsonArrayBuilder arrayBuilder;
+  private JsonArrayBuilder arrayBuilder; 
+//  private JsonObjectBuilder synomyBuilder;
+  private JsonArrayBuilder synomysArrayBuilder;
+//  private JsonObjectBuilder synomyAuthorBuilder;
+  private JsonArrayBuilder synomyAuthorsArrayBuilder;
+  
+  private boolean isAddSynomys;
   
   private StringBuilder sb;
+//  private StringBuilder synomysSb;
   
   public JsonConverter() {
 
@@ -90,53 +101,67 @@ public class JsonConverter implements Serializable {
     log.info("convertCsvToJson" );
  
     List<JsonArray> list = new ArrayList();
-    arrayBuilder = Json.createArrayBuilder();
+    arrayBuilder = Json.createArrayBuilder(); 
     builder = Json.createObjectBuilder();
-     
     String collectionPrefix = collectionJson.getString(idPrefixKey);
     log.info("collection prefix : {}", collectionPrefix);
     String collectionName = collectionJson.getString(collectionNameKey);  
     JsonObject mappingJson = collectionJson.getJsonObject(mappingKey); 
     JsonObject submappingJson = mappingJson.getJsonObject(submippingKey);
+     
+    isAddSynomys = false;
     AtomicInteger counter = new AtomicInteger(0); 
-    
     records.stream()
-            .forEach(record -> {  
-              String catalogueId = record.get(catalogueIdKey).trim();   
+            .forEach(record -> { 
+              String catalogueId = record.get(catalogueIdKey).trim();
               String catalogedDate = record.get(submappingJson.getString(catalogedDateKey));
-              
-              if(validateCatalogId(catalogueId, catalogedDate)) {
+              if (validateCatalogId(catalogueId, catalogedDate)) {
                 counter.getAndIncrement();
-                JsonHelper.getInstance().addId(builder, catalogueId, collectionPrefix);  
-                JsonHelper.getInstance().addAttribute(builder, collectionNameKey, collectionName);
-                JsonHelper.getInstance().addAttribute(builder, collectionIdKey, collectionPrefix); 
                 
-                mappingJson.keySet().stream() 
-                    .filter(key -> !key.equals(submippingKey)) 
-                    .forEach(key -> {  
-                      add(key, record.get(mappingJson.getString(key))); 
-                    }); 
-                addExtraData(submappingJson, record); 
+                if(isAddSynomys) {
+                  builder.add(synonymKey, synomysArrayBuilder);
+                  builder.add(synonymAuthorKey, synomyAuthorsArrayBuilder);
+                } 
+                arrayBuilder.add(builder);
+
+                builder = Json.createObjectBuilder();
+                synomysArrayBuilder = Json.createArrayBuilder();
+                synomyAuthorsArrayBuilder = Json.createArrayBuilder();
+                isAddSynomys = false;
+                JsonHelper.getInstance().addId(builder, catalogueId, collectionPrefix);
+                JsonHelper.getInstance().addAttribute(builder, collectionNameKey, collectionName);
+                JsonHelper.getInstance().addAttribute(builder, collectionIdKey, collectionPrefix);
+
+                mappingJson.keySet().stream()
+                        .filter(key -> !key.equals(submippingKey))
+                        .forEach(key -> {
+                          add(key, record.get(mappingJson.getString(key)));
+                        });
+                addExtraData(submappingJson, record);
                 String country = record.get(mappingJson.getString(countryKey));
-                if(country != null && country.equals(sweden)) {
+                if (country != null && country.equals(sweden)) {
                   add(inSwedenKey, true);
                 }
-                arrayBuilder.add(builder); 
-                if (counter.get() % batchSize == 0) {   
-                  list.add(arrayBuilder.build()); 
-                  arrayBuilder = Json.createArrayBuilder();  
+              } else { 
+                if(isAddSynomys) {
+                  String synomy = record.get(speciesName);
+                  String synomyAuthor = record.get(author);
+                  addSynomys(synomy, synomyAuthor); 
                 } 
-              } 
+              }
+              if (counter.get() % batchSize == 0) {
+                list.add(arrayBuilder.build());
+                arrayBuilder = Json.createArrayBuilder();
+              }
             });
-    list.add(arrayBuilder.build()); 
-    return list;  
+    list.add(arrayBuilder.build());
+    return list;
   }
   
-  private void addExtraData(JsonObject json, CSVRecord record) { 
+  private void addExtraData(JsonObject json, CSVRecord record) {  
+    String typeStatus = record.get(json.getString(typeStatusKey)); 
     
-    String typeStatus = record.get(json.getString(typeStatusKey));
-    log.info("addExtraDa : {}", typeStatus);
-    if(StringUtils.isBlank(typeStatus)) {
+    if(!StringUtils.isBlank(typeStatus)) {
       add(isTypeKey, true);
       add(typeStatusKey, typeStatus);
     }
@@ -144,19 +169,28 @@ public class JsonConverter implements Serializable {
     addHighTaxon(json.getJsonObject(classificationKey), record);
     addMap(json.getJsonObject(coordinateKey), record);
     addCollectingDate(json.getJsonObject(collDateKey), record);
-    addSynonym(json.getJsonObject(synonymKey), record);
+    addSynomy(json.getJsonObject(synonymKey), record);
   }
   
-  
-  private void addSynonym(JsonObject json, CSVRecord record) {
-    String synomy = record.get(json.getString(synonymKey));
-    String synomyAuthor = record.get(json.getString(synonymAuthorKey));
-    add(synonymKey, synomy);
+  private void addSynomys(String synomy, String synomyAuthor) {
     sb = new StringBuilder();
     sb.append(synomy);
     sb.append(emptySpace);
-    sb.append(synomyAuthor);
-    add(synonymAuthorKey, sb.toString().trim());
+    sb.append(synomyAuthor); 
+     
+    if (!StringUtils.isBlank(synomy)) {
+      synomysArrayBuilder.add(synomy); 
+      synomyAuthorsArrayBuilder.add(sb.toString().trim()); 
+    } 
+  }
+  
+  private void addSynomy(JsonObject json, CSVRecord record) {
+    String synomy = record.get(json.getString(synonymKey)); 
+   
+    if(!StringUtils.isBlank(synomy)) {
+      addSynomys(synomy, record.get(json.getString(synonymAuthorKey))); 
+      isAddSynomys = true;
+    } 
   }
  
   private void addMap(JsonObject json, CSVRecord record) {
@@ -165,8 +199,8 @@ public class JsonConverter implements Serializable {
     
     if(!StringUtils.isAnyBlank(latitude, longtitude)) {
       if(pattern.matcher(latitude).matches() && pattern.matcher(longtitude).matches()) {
-        add(latitudeKey, latitude);
-        add(longtitudeKey, longtitude);
+        JsonHelper.getInstance().addAttribute(builder, latitudeKey, latitude);
+        JsonHelper.getInstance().addAttribute(builder, longtitudeKey, longtitude); 
         add(mapKey, true);
         addCoordinates(latitude, longtitude);
       } 
@@ -179,7 +213,7 @@ public class JsonConverter implements Serializable {
     sb.append(latitude);
     sb.append(e);
     sb.append(longtitude);
-    add(coordinateKey, sb.toString().trim());
+    JsonHelper.getInstance().addAttribute(builder, coordinateKey, sb.toString().trim()); 
   }
   
   private void addHighTaxon(JsonObject json, CSVRecord record) { 
@@ -216,10 +250,10 @@ public class JsonConverter implements Serializable {
   }
 
   private void addCatalogDate(LocalDate date, String catalogedDate) { 
-      add(catalogedDateKey, catalogedDate);
-      add(catalogedMonthKey, date.getMonthValue());
-      add(catalogedMonthNameKey, date.getMonth().name());
-      add(catalogedYearKey, date.getYear());  
+    JsonHelper.getInstance().addAttribute(builder, catalogedDateKey, catalogedDate);  
+    JsonHelper.getInstance().addAttribute(builder, catalogedMonthKey, date.getMonthValue());  
+    JsonHelper.getInstance().addAttribute(builder, catalogedMonthNameKey, date.getMonth().name()); 
+    JsonHelper.getInstance().addAttribute(builder, catalogedYearKey, date.getYear());  
   }
 
   private void addCollectingDate(JsonObject json, CSVRecord record) {
@@ -256,23 +290,16 @@ public class JsonConverter implements Serializable {
   }
   
   private boolean validateCatalogId(String value, String catalogedDate) { 
-    log.info("validateCatalogId : {} -- {}", value, catalogedDate);
+//    log.info("validateCatalogId : {} -- {}", value, catalogedDate);
     if(!StringUtils.isAllBlank(value, catalogedDate)) {
-      LocalDate date = Util.getInstance().stringToLocalDate(catalogedDate);
-      if(date != null) {
+      LocalDate date = Util.getInstance().stringToLocalDate(catalogedDate); 
+      if(date != null) { 
         addCatalogDate(date, catalogedDate);
         return true;
       } 
     } 
-    return false;
-//    if(!StringUtils.isBlank(value) && !value.trim().matches(specialChartRegex)) {
-////      log.info("not valid : {}", value);
-//      return false;
-//    }
-//    String newValue = value.replaceAll(regex, emptyString);   
-//    return newValue.trim().length() > 5;
-  }
- 
+    return false; 
+  } 
  
   private void add(String att, String value) { 
 //    log.info("add : {} -- {}", att, value);
