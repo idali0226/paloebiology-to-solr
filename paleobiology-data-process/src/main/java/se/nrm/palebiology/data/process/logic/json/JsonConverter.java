@@ -90,12 +90,12 @@ public class JsonConverter implements Serializable {
   
   private boolean isAddSynomys;
   
-  private StringBuilder sb;
-//  private StringBuilder synomysSb;
+  private StringBuilder sb; 
   
   public JsonConverter() {
 
   }
+   
 
   public List<JsonArray> convertCsvToJson(List<CSVRecord> records, JsonObject collectionJson) {  
     log.info("convertCsvToJson" );
@@ -109,19 +109,27 @@ public class JsonConverter implements Serializable {
     JsonObject mappingJson = collectionJson.getJsonObject(mappingKey); 
     JsonObject submappingJson = mappingJson.getJsonObject(submippingKey);
      
-    isAddSynomys = false;
-    AtomicInteger counter = new AtomicInteger(0); 
+    isAddSynomys = false; 
+    AtomicInteger counter = new AtomicInteger(1);
     records.stream()
             .forEach(record -> { 
+//              String catalogueId = record.get(catalogueIdKey).trim().replaceAll("^\"|\"$", "");
+//              String catalogedDate = record.get(submappingJson.getString(catalogedDateKey)).replaceAll("^\"|\"$", "");
               String catalogueId = record.get(catalogueIdKey).trim();
               String catalogedDate = record.get(submappingJson.getString(catalogedDateKey));
+              boolean isValid = validateCatalogId(catalogueId, catalogedDate);
+              log.info("isvalid : {} -- {}", isValid, catalogueId);
               if (validateCatalogId(catalogueId, catalogedDate)) {
+                if (counter.get() % batchSize == 0) {
+                  list.add(arrayBuilder.build()); 
+                  arrayBuilder = Json.createArrayBuilder();
+                }
+
                 counter.getAndIncrement();
-                
-                if(isAddSynomys) {
+                if (isAddSynomys) {
                   builder.add(synonymKey, synomysArrayBuilder);
                   builder.add(synonymAuthorKey, synomyAuthorsArrayBuilder);
-                } 
+                }
                 arrayBuilder.add(builder);
 
                 builder = Json.createObjectBuilder();
@@ -143,16 +151,10 @@ public class JsonConverter implements Serializable {
                   add(inSwedenKey, true);
                 }
               } else { 
-                if(isAddSynomys) {
-                  String synomy = record.get(speciesName);
-                  String synomyAuthor = record.get(author);
-                  addSynomys(synomy, synomyAuthor); 
+                if(isAddSynomys) { 
+                  addSynomys(record.get(speciesName), record.get(author)); 
                 } 
-              }
-              if (counter.get() % batchSize == 0) {
-                list.add(arrayBuilder.build());
-                arrayBuilder = Json.createArrayBuilder();
-              }
+              }  
             });
     list.add(arrayBuilder.build());
     return list;
@@ -290,7 +292,7 @@ public class JsonConverter implements Serializable {
   }
   
   private boolean validateCatalogId(String value, String catalogedDate) { 
-//    log.info("validateCatalogId : {} -- {}", value, catalogedDate);
+    log.info("validateCatalogId : {} -- {}", value, catalogedDate);
     if(!StringUtils.isAllBlank(value, catalogedDate)) {
       LocalDate date = Util.getInstance().stringToLocalDate(catalogedDate); 
       if(date != null) { 
